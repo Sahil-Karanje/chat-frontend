@@ -54,7 +54,7 @@ const Login = () => {
             <div className="w-2.5 h-2.5 rounded-full bg-accent" />
           </div>
           <span className="text-sm font-semibold font-mono text-gray-400 tracking-widest uppercase">
-            Pulse Chat
+            Chapad Chapad
           </span>
         </div>
 
