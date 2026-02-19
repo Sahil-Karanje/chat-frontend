@@ -33,6 +33,7 @@ const Register = () => {
     setError('')
     try {
       await register({
+        name: form.username,
         username: form.username,
         email: form.email,
         password: form.password,
