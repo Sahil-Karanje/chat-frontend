@@ -195,6 +195,7 @@ export const ChatProvider = ({ children }) => {
         sendMessage,
         reconnectSocket,
         socket: socketRef,
+        setConversations
       }}
     >
       {children}
