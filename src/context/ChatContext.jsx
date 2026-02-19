@@ -87,20 +87,40 @@ export const ChatProvider = ({ children }) => {
 
     socket.on('message_sent', (message) => {
       setMessages((prev) => {
-        // Replace optimistic or add
         if (prev.some((m) => m._id === message._id)) return prev
         return [...prev, message]
       })
 
-      // Update conversation last message preview
-      setConversations((prev) =>
-        prev.map((c) =>
-          c._id === message.conversationId
-            ? { ...c, lastMessage: message }
+      setConversations((prev) => {
+        const existing = prev.find(c => c._id === message.conversationId)
+
+        // If conversation already exists → update it
+        if (existing) {
+          return prev.map(c =>
+            c._id === message.conversationId
+              ? { ...c, lastMessage: message }
+              : c
+          )
+        }
+
+        // 🔥 If it was a temp conversation → replace it
+        return prev.map(c =>
+          c._id?.startsWith('temp-')
+            ? { ...c, _id: message.conversationId, lastMessage: message }
             : c
         )
-      )
+      })
+
+      // 🔥 Important: update activeConversation too
+      setActiveConversation((prev) => {
+        if (!prev) return prev
+        if (prev._id?.startsWith('temp-')) {
+          return { ...prev, _id: message.conversationId }
+        }
+        return prev
+      })
     })
+
 
     socketRef.current = socket
 
