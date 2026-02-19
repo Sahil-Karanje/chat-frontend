@@ -42,6 +42,7 @@ export const ChatProvider = ({ children }) => {
       socketRef.current.disconnect()
     }
 
+    // Handshake authentication
     const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
@@ -58,6 +59,7 @@ export const ChatProvider = ({ children }) => {
     })
 
     socket.on('receive_message', (message) => {
+      // add new message
       setMessages((prev) => {
         // Avoid duplicates
         if (prev.some((m) => m._id === message._id)) return prev
@@ -117,6 +119,7 @@ export const ChatProvider = ({ children }) => {
     }
   }, [])
 
+  // fetching conversations which we will see on sidebar
   const fetchConversations = useCallback(async () => {
     setLoadingConversations(true)
     try {
@@ -129,6 +132,7 @@ export const ChatProvider = ({ children }) => {
     }
   }, [])
 
+  // set the active conversation when we will click on a particular chat
   const selectConversation = useCallback(async (conversation) => {
     setActiveConversation(conversation)
     setLoadingMessages(true)

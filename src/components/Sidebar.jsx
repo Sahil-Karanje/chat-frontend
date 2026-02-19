@@ -1,13 +1,72 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useChat } from '../context/ChatContext'
 import ConversationItem from './ConversationItem'
 import Avatar from './Avatar'
+import { searchUsersApi } from '../api/chat'
 
 const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
   const { user, logout } = useAuth()
   const { conversations, activeConversation, selectConversation, loadingConversations } = useChat()
   const [search, setSearch] = useState('')
+
+  //for searching new users
+  const [showNewChat, setShowNewChat] = useState(false)
+  const [searchUsers, setSearchUsers] = useState([])
+  const [userSearch, setUserSearch] = useState('')
+  const [loadingUsers, setLoadingUsers] = useState(false)
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!userSearch.trim()) {
+        setSearchUsers([])
+        return
+      }
+
+      setLoadingUsers(true)
+      try {
+        const res = await searchUsersApi(userSearch)
+        setSearchUsers(res.data.data || [])
+      } catch (err) {
+        console.error("User search failed", err)
+      } finally {
+        setLoadingUsers(false)
+      }
+    }
+
+    const debounce = setTimeout(fetchUsers, 400)
+    return () => clearTimeout(debounce)
+  }, [userSearch])
+
+  const handleStartChat = (selectedUser) => {
+    // Check if conversation already exists
+    const existing = conversations.find((c) => {
+      const other =
+        c.otherUser ||
+        c.participants?.find((p) => p._id !== user?._id)
+
+      return other?._id === selectedUser._id
+    })
+
+    if (existing) {
+      selectConversation(existing)
+    } else {
+      // Create temporary conversation object
+      const tempConversation = {
+        _id: `temp-${selectedUser._id}`,
+        participants: [user, selectedUser],
+        otherUser: selectedUser,
+        lastMessage: null,
+      }
+
+      selectConversation(tempConversation)
+    }
+
+    setShowNewChat(false)
+    setUserSearch('')
+    setSearchUsers([])
+    onSelectConversation?.()
+  }
 
   const filtered = conversations.filter((c) => {
     const other =
@@ -42,6 +101,15 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
             </span>
           </div>
         </div>
+
+        {/* add new chat button */}
+        <button
+          onClick={() => setShowNewChat(true)}
+          className="p-1.5 rounded-lg text-muted hover:text-gray-300 hover:bg-surface-3 transition-all"
+          title="New Chat"
+        >
+          +
+        </button>
 
         <div className="flex items-center gap-2">
           <Avatar name={user?.username || user?.name || user?.email || ''} size="sm" />
@@ -105,6 +173,54 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
           ))
         )}
       </div>
+
+      {showNewChat && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-surface-1 border border-border rounded-xl w-[90%] max-w-sm p-4">
+            <h3 className="text-sm font-semibold text-gray-200 mb-3">
+              Start New Chat
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-accent/50"
+            />
+
+            <div className="mt-3 max-h-48 overflow-y-auto">
+              {loadingUsers ? (
+                <p className="text-xs text-muted">Searching...</p>
+              ) : searchUsers.length === 0 ? (
+                <p className="text-xs text-muted mt-2">
+                  {userSearch ? "No users found" : "Start typing to search"}
+                </p>
+              ) : (
+                searchUsers.map((u) => (
+                  <div
+                    key={u._id}
+                    onClick={() => handleStartChat(u)}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-3 cursor-pointer"
+                  >
+                    <Avatar name={u.username || u.name} size="sm" />
+                    <span className="text-sm text-gray-200">
+                      {u.username || u.name}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowNewChat(false)}
+              className="mt-3 text-xs text-muted hover:text-gray-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* User footer */}
       <div className="px-4 py-3 border-t border-border">
