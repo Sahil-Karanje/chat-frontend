@@ -7,7 +7,7 @@ import { searchUsersApi } from '../api/chat'
 
 const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
   const { user, logout } = useAuth()
-  const { conversations, activeConversation, selectConversation, loadingConversations } = useChat()
+  const { conversations, activeConversation, selectConversation, loadingConversations, setConversations } = useChat()
   const [search, setSearch] = useState('')
 
   //for searching new users
@@ -51,7 +51,6 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
     if (existing) {
       selectConversation(existing)
     } else {
-      // Create temporary conversation object
       const tempConversation = {
         _id: `temp-${selectedUser._id}`,
         participants: [user, selectedUser],
@@ -59,8 +58,11 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
         lastMessage: null,
       }
 
+      // 🔥 Add temp conversation to top of list
+      setConversations((prev) => [tempConversation, ...prev])
       selectConversation(tempConversation)
     }
+
 
     setShowNewChat(false)
     setUserSearch('')
@@ -102,15 +104,6 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
           </div>
         </div>
 
-        {/* add new chat button */}
-        <button
-          onClick={() => setShowNewChat(true)}
-          className="p-1.5 rounded-lg text-muted hover:text-gray-300 hover:bg-surface-3 transition-all"
-          title="New Chat"
-        >
-          +
-        </button>
-
         <div className="flex items-center gap-2">
           <Avatar name={user?.username || user?.name || user?.email || ''} size="sm" />
           <button
@@ -143,7 +136,7 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
       </div>
 
       {/* Conversations list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 relative overflow-y-auto px-2 py-2">
         {loadingConversations ? (
           <div className="flex flex-col gap-2 px-1 py-2">
             {[...Array(5)].map((_, i) => (
@@ -172,6 +165,15 @@ const Sidebar = ({ onSelectConversation, mobileVisible, onClose }) => {
             />
           ))
         )}
+
+        {/* add new chat button */}
+        <button
+          onClick={() => setShowNewChat(true)}
+          className="px-6 py-2 bg-[#22c55eb3] absolute right-6 bottom-6 text-white rounded-lg hover:text-gray-300 hover:bg-surface-3 transition-all"
+          title="New Chat"
+        >
+          +
+        </button>
       </div>
 
       {showNewChat && (

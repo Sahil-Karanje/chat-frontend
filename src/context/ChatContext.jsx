@@ -135,8 +135,16 @@ export const ChatProvider = ({ children }) => {
   // set the active conversation when we will click on a particular chat
   const selectConversation = useCallback(async (conversation) => {
     setActiveConversation(conversation)
+
+    // 🔥 If it's a temporary conversation (optimistic one)
+    if (!conversation?._id || conversation._id.startsWith("temp-")) {
+      setMessages([])
+      return
+    }
+
     setLoadingMessages(true)
     setMessages([])
+
     try {
       const res = await getMessagesApi(conversation._id)
       setMessages(res.data.data || res.data.messages || [])
@@ -146,6 +154,7 @@ export const ChatProvider = ({ children }) => {
       setLoadingMessages(false)
     }
   }, [])
+
 
   const sendMessage = useCallback(
     (receiverId, content, conversationId) => {
